@@ -6,13 +6,29 @@ const { OrchestrationClient } = require('@sap-ai-sdk/orchestration');
  */
 module.exports = async (srv) => {
   
-  // Initialize orchestration client with GPT-4o model
+  // Initialize orchestration client with GPT-4o model and advanced parameters
   const orchestrationClient = new OrchestrationClient({
     llm: {
-      model_name: 'gpt-4o'
+      model_name: 'gpt-4o',
+      model_params: {
+        temperature: 0.7,        // Controla creatividad (0-2): 0=determinístico, 2=muy creativo
+        max_tokens: 1000,        // Límite máximo de tokens en la respuesta
+        top_p: 0.9,             // Nucleus sampling: controla diversidad de vocabulario
+        frequency_penalty: 0.0,  // Penaliza repetición de tokens (-2 a 2)
+        presence_penalty: 0.0    // Penaliza repetición de temas (-2 a 2)
+      }
     },
     templating: {
-      template: [{ role: 'user', content: 'Answer the question: {{?question}}' }]
+      template: [
+        { 
+          role: 'system', 
+          content: 'You are a helpful AI assistant specialized in providing clear, accurate, and helpful responses. You have expertise in technology, business, and general knowledge.' 
+        },
+        { 
+          role: 'user', 
+          content: '{{?question}}' 
+        }
+      ]
     }
   });
 
@@ -42,6 +58,11 @@ module.exports = async (srv) => {
         question: question,
         answer: aiResponse,
         model: 'gpt-4o',
+        model_params: {
+          temperature: 0.7,
+          max_tokens: 1000,
+          top_p: 0.9
+        },
         timestamp: new Date().toISOString()
       };
 
