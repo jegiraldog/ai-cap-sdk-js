@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI CAP SDK - Chat Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0070f3;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .chat-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e1e1e1;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 20px;
+            background: #0070f3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0051a2;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .response {
+            background: #f8f9fa;
+            border-left: 4px solid #0070f3;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .error {
+            background: #ffe6e6;
+            border-left-color: #ff4444;
+            color: #cc0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI CAP SDK Demo</h1>
+        <p>Conectado a SAP AI Core usando Orchestration Service con GPT-4o</p>
+        
+        <div class="chat-form">
+            <input type="text" id="questionInput" placeholder="Haz una pregunta..." />
+            <button onclick="askQuestion()">Preguntar</button>
+        </div>
+        
+        <div id="responses"></div>
+    </div>
+
+    <script>
+        async function askQuestion() {
+            const input = document.getElementById('questionInput');
+            const question = input.value.trim();
+            
+            if (!question) return;
+            
+            const responsesDiv = document.getElementById('responses');
+            const button = document.querySelector('button');
+            
+            // Show loading state
+            button.disabled = true;
+            button.textContent = 'Procesando...';
+            
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'response loading';
+            loadingDiv.innerHTML = `<strong>Pregunta:</strong> ${question}<br><em>Esperando respuesta de AI...</em>`;
+            responsesDiv.appendChild(loadingDiv);
+            
+            try {
+                const response = await fetch('/odata/v4/ai/askQuestion', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question })
+                });
+                
+                const data = await response.json();
+                
+                // Remove loading message
+                responsesDiv.removeChild(loadingDiv);
+                
+                if (response.ok) {
+                    const responseDiv = document.createElement('div');
+                    responseDiv.className = 'response';
+                    responseDiv.innerHTML = `
+                        <strong>Pregunta:</strong> ${data.question}<br>
+                        <strong>Respuesta:</strong> ${data.answer}<br>
+                        <small>Modelo: ${data.model} | ${new Date(data.timestamp).toLocaleString()}</small>
+                    `;
+                    responsesDiv.appendChild(responseDiv);
+                } else {
+                    throw new Error(data.error?.message || 'Error en la solicitud');
+                }
+                
+            } catch (error) {
+                // Remove loading message
+                responsesDiv.removeChild(loadingDiv);
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'response error';
+                errorDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                responsesDiv.appendChild(errorDiv);
+            }
+            
+            // Reset form
+            input.value = '';
+            button.disabled = false;
+            button.textContent = 'Preguntar';
+        }
+        
+        // Allow Enter key to submit
+        document.getElementById('questionInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                askQuestion();
+            }
+        });
+    </script>
+</body>
+</html>
